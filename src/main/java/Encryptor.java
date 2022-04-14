@@ -1,5 +1,5 @@
 import java.io.*;
-import java.util.Arrays;
+
 
 public class Encryptor {
 
@@ -9,33 +9,24 @@ public class Encryptor {
         this.key = key;
     }
 
-    private byte[] getFullKey(String key, int len) {
-        byte[] buff = key.getBytes();
-        byte[] tmp = key.getBytes();
-        byte[] res = key.getBytes();
-        while (buff.length < len) {
-            res = Arrays.copyOf(buff, buff.length + tmp.length);
-            System.arraycopy(tmp, 0, res, buff.length, tmp.length);
-            buff = res;
-        }
-        byte[] fullKey = Arrays.copyOfRange(res, 0, len);
-        return fullKey;
-    }
 
     public int encrypt(InputStream in, OutputStream out) throws IOException {
         int count = 0;
-        byte[] bufferedInput = in.readAllBytes();
-        byte[] bufferedKey = this.getFullKey(key, bufferedInput.length);
-        try (OutputStreamWriter writer = new OutputStreamWriter(out)) {
-            for (int i = 0; i < bufferedInput.length; i++) {
-                int encrypted = bufferedInput[i] ^ bufferedKey[i];
-                writer.write(encrypted);
-                count++;
+        byte[] bufferedKey = this.key.getBytes();
+        try (InputStreamReader reader = new InputStreamReader(in)) {
+            try (OutputStreamWriter writer = new OutputStreamWriter(out)) {
+                int sym = reader.read();
+                while (sym != -1) {
+                    count++;
+                    int currPos = count - bufferedKey.length*(count/bufferedKey.length);
+                    writer.write(sym^bufferedKey[currPos]);
+                    sym = reader.read();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            return count;
         }
-        return count;
     }
 
     public int encrypt(String inputName, String outputName) throws IOException {
